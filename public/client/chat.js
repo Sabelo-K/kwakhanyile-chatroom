@@ -148,6 +148,7 @@ socket.on('dm_message', (payload) => {
   if (!currentDM || currentDM.id !== otherId) return;
   addDM(line);
 });
+
 msgForm.addEventListener('submit', (e) => {
   e.preventDefault();
   const t = msgInput.value.trim(); if (!t) return;
@@ -169,12 +170,109 @@ log.addEventListener('click', (e) => {
   openDM(uid);
 });
 dmClose.addEventListener('click', () => closeDM());
-if ('geolocation' in navigator) {
-  navigator.geolocation.watchPosition(pos => {
+
+// ----------------- Location permission helper -----------------
+const overlay = document.getElementById('locOverlay');
+const locMsg = document.getElementById('locMsg');
+const locHowTo = document.getElementById('locHowTo');
+const btnEnable = document.getElementById('locEnable');
+const btnRetry = document.getElementById('locRetry');
+const btnClose = document.getElementById('locClose');
+
+let watchId = null;
+const geoOpts = { enableHighAccuracy: true, maximumAge: 1000, timeout: 6000 };
+
+function showOverlay(msg, showHowTo=false) {
+  locMsg.textContent = msg || 'We need your device location to verify you are inside the venue.';
+  if (showHowTo) {
+    locHowTo.style.display = 'block';
+    locHowTo.innerHTML = platformHowTo();
+  } else {
+    locHowTo.style.display = 'none';
+    locHowTo.innerHTML = '';
+  }
+  overlay.style.display = 'block';
+}
+function hideOverlay(){ overlay.style.display = 'none'; }
+
+function startWatch(triggerPrompt=false) {
+  if (!('geolocation' in navigator)) {
+    geoStatus.textContent = 'This device does not support geolocation.';
+    return;
+  }
+  if (watchId) return; // already watching
+  const success = (pos) => {
+    hideOverlay();
     const { latitude, longitude, accuracy } = pos.coords;
     socket.emit('gps', { lat: latitude, lng: longitude, accuracy });
-  }, err => { geoStatus.textContent = `Location error: ${err.message}`; }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 });
-} else {
-  geoStatus.textContent = 'This device does not support geolocation.';
+    if (!watchId) watchId = navigator.geolocation.watchPosition(success, error, geoOpts);
+  };
+  const error = (err) => {
+    geoStatus.textContent = `Location error: ${err.message}`;
+    showOverlay('We could not get your location. Please allow location access.', true);
+  };
+
+  if (triggerPrompt) {
+    // One-shot call to trigger the native permission prompt
+    navigator.geolocation.getCurrentPosition(success, error, geoOpts);
+  } else {
+    watchId = navigator.geolocation.watchPosition(success, error, geoOpts);
+  }
 }
+
+async function checkPermissionAndStart() {
+  if (!('permissions' in navigator) || !navigator.permissions.query) {
+    // Older browsers: just show helper to trigger prompt
+    showOverlay('This room needs your location. Tap "Enable location".');
+    return;
+  }
+  try {
+    const status = await navigator.permissions.query({ name: 'geolocation' });
+    handlePermission(status.state);
+    status.onchange = () => handlePermission(status.state);
+  } catch {
+    showOverlay('This room needs your location. Tap "Enable location".');
+  }
+}
+function handlePermission(state) {
+  if (state === 'granted') {
+    hideOverlay();
+    startWatch(false);
+  } else if (state === 'prompt') {
+    showOverlay('Please allow location when prompted to join this room.');
+  } else if (state === 'denied') {
+    showOverlay('Location is blocked for this site. Follow the steps below, then tap "Retry".', true);
+  }
+}
+
+function platformHowTo() {
+  const ua = navigator.userAgent || '';
+  if (/iPhone|iPad|iPod/.test(ua)) {
+    return `
+      <ul>
+        <li>Open Safari ⋯ menu → <b>Website Settings</b> → <b>Location</b> → <b>Allow</b>.</li>
+        <li>Also enable <b>Precise Location</b> in iOS Settings → Privacy & Security → Location Services → Safari Websites.</li>
+      </ul>`;
+  }
+  if (/Android/i.test(ua)) {
+    return `
+      <ul>
+        <li>Tap the lock icon in the address bar → <b>Permissions</b> → <b>Location</b> → <b>Allow</b>.</li>
+        <li>If still blocked: Android Settings → Apps → your browser → Permissions → enable <b>Location</b>.</li>
+      </ul>`;
+  }
+  return `
+    <ul>
+      <li>Click the lock icon near the address bar → <b>Site settings</b> → allow <b>Location</b> for this site.</li>
+    </ul>`;
+}
+
+// Overlay buttons
+btnEnable?.addEventListener('click', () => startWatch(true));
+btnRetry?.addEventListener('click', () => { watchId = null; checkPermissionAndStart(); });
+btnClose?.addEventListener('click', () => hideOverlay());
+
+// Kick it off
+checkPermissionAndStart();
+
 function escapeHtml(str){ return String(str).replace(/[&<>"]/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[s])); }
