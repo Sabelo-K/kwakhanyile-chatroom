@@ -1,0 +1,26 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Join Venue Chat</title><link rel="stylesheet" href="/css.css" /></head>
+<body class="center"><div class="glass cardpad" style="width:100%; max-width: 560px;">
+  <h1 class="brand mb-1">Join venue chat</h1>
+  <p id="venueName" class="small mb-1">…</p>
+  <p id="venueAddr" class="small mb-4"></p>
+  <form id="joinForm" class="flex flex-col gap-3">
+    <input id="alias" class="input" placeholder="Alias (display name)" required maxlength="50" />
+    <input id="phone" class="input" placeholder="Cell number" required maxlength="32" />
+    <select id="gender" class="select" required>
+      <option value="">Select your gender</option>
+      <option value="Female">Female</option>
+      <option value="Male">Male</option>
+      <option value="Non-binary">Non-binary</option>
+      <option value="Prefer not to say">Prefer not to say</option>
+    </select>
+    <div class="small">Profile picture (optional):</div>
+    <input id="avatar" type="file" accept="image/png,image/jpeg,image/webp" class="input" />
+    <input id="fun" class="input" placeholder="Fun fact (optional)" maxlength="140" />
+    <button class="btn btn-primary">Join chat</button>
+  </form>
+  <p class="small mt-2">By joining, you allow location access to verify you are inside the venue. You will be removed when you leave.</p>
+</div>
+<script type="module" src="/client/join.js"></script></body></html>

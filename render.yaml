@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: kwakhanyile-chatroom
+    env: node
+    plan: free
+    region: frankfurt
+    buildCommand: "npm install"
+    startCommand: "npm start"
+    autoDeploy: true
+    healthCheckPath: "/"
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: DEFAULT_RADIUS
+        value: "90"
+      - key: PORT
+        value: "3000"
+      # After first deploy, set this in Render dashboard to your real URL (then redeploy)
+      - key: BASE_URL
+        value: ""
+    disk:
+      name: uploads
+      mountPath: /opt/render/project/src/uploads
+      sizeGB: 2

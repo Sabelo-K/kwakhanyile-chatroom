@@ -1,0 +1,18 @@
+[
+  {
+    "id": "kwakhanyile",
+    "name": "KwaKhanyile",
+    "address": "45 Zenith Drive, Umhlanga Ridge, 4319, South Africa",
+    "lat": -29.718854653869,
+    "lng": 31.065988540649,
+    "radius": 90
+  },
+  {
+    "id": "grandparents-home",
+    "name": "Grandparents' Home",
+    "address": "",
+    "lat": -29.6155,
+    "lng": 30.26775,
+    "radius": 90
+  }
+]

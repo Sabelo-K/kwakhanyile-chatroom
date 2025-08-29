@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>KwaKhanyile – Venues</title><link rel="stylesheet" href="/css.css" /></head>
+<body class="p-4"><div class="maxw" style="display:grid; gap:1rem;">
+  <header class="glass cardpad flex justify-between items-center">
+    <div><div class="brand">Venue Chatrooms</div><div class="small">Scan a QR to join from inside the venue</div></div>
+    <span class="badge">Premium</span>
+  </header>
+  <div id="cards" class="grid"></div>
+</div>
+<script>
+fetch('/api/places').then(r=>r.json()).then(list=>{
+  const wrap = document.getElementById('cards');
+  list.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <img class="qrimg" src="/qr/${p.id}.png" alt="QR for ${p.name}" />
+      <div style="flex:1">
+        <div style="font-weight:700">${p.name}</div>
+        <div class="small">${p.address ? p.address : 'Coordinates: ' + p.lat.toFixed(6) + ', ' + p.lng.toFixed(6)}</div>
+        <div class="small">Geofence radius: ${p.radius}m</div>
+        <div class="mt-2"><a href="/join.html?place=${encodeURIComponent(p.id)}">Open join link</a></div>
+      </div>`;
+    wrap.appendChild(card);
+  });
+}).catch(()=>alert('Failed to load venues'));
+</script></body></html>

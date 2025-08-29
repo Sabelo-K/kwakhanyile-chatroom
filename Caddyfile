@@ -1,0 +1,13 @@
+{
+  email {$EMAIL}
+}
+{$DOMAIN} {
+  encode gzip
+  reverse_proxy app:3000
+  header {
+    X-Frame-Options "DENY"
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    Content-Security-Policy "default-src 'self' 'unsafe-inline' data: https: ws:"
+  }
+}

@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Venue – Chat</title><link rel="stylesheet" href="/css.css" /><script src="/socket.io/socket.io.js"></script></head>
+<body class="p-4"><div class="maxw" style="display:grid; gap:1rem;">
+  <header class="glass cardpad flex justify-between items-center">
+    <div><div id="roomTitle" style="font-size:1.25rem; font-weight:600">Venue chat</div><div id="geoStatus" class="small">Waiting for location…</div></div>
+    <button id="leaveBtn" class="btn btn-danger">Leave</button>
+  </header>
+
+  <div id="roster" class="roster"></div>
+
+  <div id="roomPanel"><main id="log" class="chatlog"></main>
+    <form id="msgForm" class="glass cardpad flex gap-3 mt-2">
+      <input id="msg" class="input" placeholder="Type your message…" maxlength="2000" />
+      <button class="btn btn-primary">Send</button>
+    </form>
+  </div>
+
+  <div id="dmPanel" class="glass cardpad" style="display:none;">
+    <div class="flex justify-between items-center"><div><span class="small">Private chat with</span> <strong id="dmTitle"></strong></div><button id="dmClose" class="btn btn-danger">Back to Room</button></div>
+    <div id="dmLog" class="chatlog" style="height:50vh; margin-top:.75rem;"></div>
+    <form id="dmForm" class="flex gap-3 mt-2"><input id="dmMsg" class="input" placeholder="Type a private message…" maxlength="2000" /><button class="btn btn-primary">Send</button></form>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<div id="debugBox" class="debug"></div>
+<script type="module" src="/client/chat.js"></script></body></html>

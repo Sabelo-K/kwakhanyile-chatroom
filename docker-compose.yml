@@ -1,0 +1,35 @@
+version: "3.9"
+services:
+  app:
+    build: .
+    container_name: kwakhanyile-app
+    environment:
+      - PORT=${PORT:-3000}
+      - DEFAULT_RADIUS=${DEFAULT_RADIUS:-90}
+      - BASE_URL=${BASE_URL}
+    volumes:
+      - uploads:/app/uploads
+    networks: [web]
+  caddy:
+    image: caddy:2
+    container_name: kwakhanyile-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN}
+      - EMAIL=${EMAIL}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [app]
+    networks: [web]
+volumes:
+  uploads:
+  caddy_data:
+  caddy_config:
+networks:
+  web:
+    driver: bridge
