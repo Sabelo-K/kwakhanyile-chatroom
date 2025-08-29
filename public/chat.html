@@ -1,28 +1,65 @@
 <!doctype html>
 <html>
-<head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Venue – Chat</title><link rel="stylesheet" href="/css.css" /><script src="/socket.io/socket.io.js"></script></head>
-<body class="p-4"><div class="maxw" style="display:grid; gap:1rem;">
-  <header class="glass cardpad flex justify-between items-center">
-    <div><div id="roomTitle" style="font-size:1.25rem; font-weight:600">Venue chat</div><div id="geoStatus" class="small">Waiting for location…</div></div>
-    <button id="leaveBtn" class="btn btn-danger">Leave</button>
-  </header>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Venue – Chat</title>
+  <link rel="stylesheet" href="/css.css" />
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="p-4">
+  <div class="maxw" style="display:grid; gap:1rem;">
+    <header class="glass cardpad flex justify-between items-center">
+      <div>
+        <div id="roomTitle" style="font-size:1.25rem; font-weight:600">Venue chat</div>
+        <div id="geoStatus" class="small">Waiting for location…</div>
+      </div>
+      <button id="leaveBtn" class="btn btn-danger">Leave</button>
+    </header>
 
-  <div id="roster" class="roster"></div>
+    <div id="roster" class="roster"></div>
 
-  <div id="roomPanel"><main id="log" class="chatlog"></main>
-    <form id="msgForm" class="glass cardpad flex gap-3 mt-2">
-      <input id="msg" class="input" placeholder="Type your message…" maxlength="2000" />
-      <button class="btn btn-primary">Send</button>
-    </form>
+    <div id="roomPanel">
+      <main id="log" class="chatlog"></main>
+      <form id="msgForm" class="glass cardpad flex gap-3 mt-2">
+        <input id="msg" class="input" placeholder="Type your message…" maxlength="2000" />
+        <button class="btn btn-primary">Send</button>
+      </form>
+    </div>
+
+    <div id="dmPanel" class="glass cardpad" style="display:none;">
+      <div class="flex justify-between items-center">
+        <div><span class="small">Private chat with</span> <strong id="dmTitle"></strong></div>
+        <button id="dmClose" class="btn btn-danger">Back to Room</button>
+      </div>
+      <div id="dmLog" class="chatlog" style="height:50vh; margin-top:.75rem;"></div>
+      <form id="dmForm" class="flex gap-3 mt-2">
+        <input id="dmMsg" class="input" placeholder="Type a private message…" maxlength="2000" />
+        <button class="btn btn-primary">Send</button>
+      </form>
+    </div>
   </div>
 
-  <div id="dmPanel" class="glass cardpad" style="display:none;">
-    <div class="flex justify-between items-center"><div><span class="small">Private chat with</span> <strong id="dmTitle"></strong></div><button id="dmClose" class="btn btn-danger">Back to Room</button></div>
-    <div id="dmLog" class="chatlog" style="height:50vh; margin-top:.75rem;"></div>
-    <form id="dmForm" class="flex gap-3 mt-2"><input id="dmMsg" class="input" placeholder="Type a private message…" maxlength="2000" /><button class="btn btn-primary">Send</button></form>
+  <div id="toast" class="toast"></div>
+  <div id="debugBox" class="debug"></div>
+
+  <!-- Location helper overlay -->
+  <div id="locOverlay" class="glass cardpad" style="display:none;
+    position:fixed; inset:0; background:rgba(0,0,0,.35); backdrop-filter:blur(2px);">
+    <div style="max-width:520px; margin:10vh auto; background:white; border-radius:16px; padding:1rem 1.25rem;">
+      <h3 style="margin:0 0 .25rem 0;">Allow location to join this room</h3>
+      <p class="small" id="locMsg">
+        We use your device location to verify you’re inside the venue. Your location is never shared publicly.
+      </p>
+      <div class="small" id="locHowTo" style="display:none; margin:.5rem 0;"></div>
+      <div class="flex gap-3 mt-2">
+        <button id="locEnable" class="btn btn-primary">Enable location</button>
+        <button id="locRetry" class="btn">I changed settings — Retry</button>
+        <button id="locClose" class="btn btn-danger">Close</button>
+      </div>
+    </div>
   </div>
-</div>
-<div id="toast" class="toast"></div>
-<div id="debugBox" class="debug"></div>
-<script type="module" src="/client/chat.js"></script></body></html>
+
+  <script type="module" src="/client/chat.js"></script>
+</body>
+</html>
