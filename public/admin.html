@@ -11,14 +11,14 @@
     <header class="glass cardpad flex justify-between items-center">
       <div>
         <div class="brand">Admin Console</div>
-        <div class="small">Create or remove places. QR codes are generated automatically.</div>
+        <div class="small">Create or remove places. Search an address or paste exact coordinates.</div>
       </div>
       <a class="btn" href="/">← Social user</a>
     </header>
 
     <section class="glass cardpad">
       <h3>Unlock</h3>
-      <p class="small">Enter your Admin code to manage places.</p>
+      <p class="small">Enter your Admin code.</p>
       <div class="flex gap-3">
         <input id="adminKey" class="input" type="password" placeholder="Admin code" />
         <button id="unlockBtn" class="btn btn-primary">Unlock</button>
@@ -27,12 +27,23 @@
     </section>
 
     <section id="mgr" class="glass cardpad" style="display:none;">
-      <h3>Create a place by address</h3>
+      <h3>Create a place</h3>
+
       <div class="grid">
         <input id="placeName" class="input" placeholder="Place name (optional)" />
-        <input id="placeAddr" class="input" placeholder="Address (required)" />
+        <div class="flex gap-3">
+          <input id="placeAddr" class="input" placeholder="Address (or leave blank if using coordinates)" />
+          <button id="findBtn" class="btn">Find</button>
+        </div>
+        <div class="flex gap-3">
+          <input id="lat" class="input" placeholder="Latitude (decimal, optional)" />
+          <input id="lng" class="input" placeholder="Longitude (decimal, optional)" />
+        </div>
         <input id="placeRadius" class="input" type="number" value="90" min="30" max="300" />
       </div>
+
+      <div id="geoOut" class="small mt-2"></div>
+
       <div class="mt-2">
         <button id="createBtn" class="btn btn-primary">Create & get QR</button>
       </div>
