@@ -20,14 +20,23 @@ app.use("/uploads", express.static("uploads", { maxAge: "1d" }));
 const server = http.createServer(app);
 const io = new SocketIOServer(server, { cors: { origin: "*" } });
 
-const DEFAULT_RADIUS = parseInt(process.env.DEFAULT_RADIUS || "60", 10);
-const places = JSON.parse(fs.readFileSync("./places.json", "utf-8")).map(p => ({ ...p, radius: p.radius || DEFAULT_RADIUS }));
-const placeById = Object.fromEntries(places.map(p => [p.id, p]));
+const DEFAULT_RADIUS = parseInt(process.env.DEFAULT_RADIUS || "90", 10);
+const ADMIN_KEY = process.env.ADMIN_KEY || ""; // set on Render
+const OPENCAGE_KEY = process.env.OPENCAGE_KEY || ""; // set on Render for geocoding
+
+// ---- load & keep places in memory; allow editing ----
+let places = JSON.parse(fs.readFileSync("./places.json", "utf-8")).map(p => ({
+  ...p, radius: p.radius || DEFAULT_RADIUS
+}));
+let placeById = Object.fromEntries(places.map(p => [p.id, p]));
+
+function savePlaces() {
+  fs.writeFileSync("./places.json", JSON.stringify(places, null, 2));
+  placeById = Object.fromEntries(places.map(p => [p.id, p]));
+}
+
+// ---- geofence utils ----
 const OUTSIDE_GRACE_MS = 10_000;
-
-// sessionId -> { placeId, alias, phone, funFact, gender, avatarUrl, socketId, outsideTimer, lastGpsAt, isInside, outCount }
-const sessions = new Map();
-
 const toRad = d => (d * Math.PI) / 180;
 const haversineMeters = (a, b) => {
   const R = 6371000;
@@ -46,6 +55,7 @@ const getBaseUrl = (req) => {
 };
 
 // ---- avatar uploads (JPEG/PNG/WebP, 3 MB) ----
+// (uses disk; on Render free it’s ephemeral but fine for demos)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads"),
   filename: (req, file, cb) => {
@@ -64,7 +74,7 @@ app.post("/api/upload", upload.single("avatar"), (req, res) => {
   return res.json({ url: `/uploads/${req.file.filename}` });
 });
 
-// ---- APIs ----
+// ---- public APIs ----
 app.get("/api/places", (req, res) => res.json(places));
 app.get("/api/places/:id", (req, res) => {
   const p = placeById[req.params.id];
@@ -82,6 +92,10 @@ app.get("/qr/:placeId.png", async (req, res) => {
     res.send(buf);
   } catch { res.status(500).send("QR error"); }
 });
+
+// ---- sessions & sockets ----
+// sessionId -> { placeId, alias, phone, funFact, gender, avatarUrl, socketId, outsideTimer, lastGpsAt, isInside, outCount }
+const sessions = new Map();
 
 app.post("/api/session/join", (req, res) => {
   const { placeId, alias, phone, funFact, gender, avatarUrl } = req.body || {};
@@ -112,7 +126,6 @@ app.get("/api/rooms/:placeId/members", (req, res) => {
   res.json(list);
 });
 
-// ---- sockets ----
 io.on("connection", (socket) => {
   socket.on("auth", ({ sessionId }) => {
     const sess = sessions.get(sessionId);
@@ -217,6 +230,80 @@ io.on("connection", (socket) => {
   });
 });
 
+// ---- Admin helpers & APIs (no face recognition) ----
+function requireAdmin(req, res, next) {
+  const key = req.headers["x-admin-key"] || req.query.key || "";
+  if (!ADMIN_KEY) return res.status(500).json({ error: "ADMIN_KEY not set on server" });
+  if (String(key) !== String(ADMIN_KEY)) return res.status(401).json({ error: "Unauthorized" });
+  next();
+}
+const slugify = (s) => String(s || "")
+  .toLowerCase()
+  .replace(/['"]/g, "")
+  .replace(/[^a-z0-9]+/g, "-")
+  .replace(/^-+|-+$/g, "");
+
+app.get("/api/admin/ping", requireAdmin, (req, res) => res.json({ ok: true }));
+
+app.get("/api/admin/places", requireAdmin, (req, res) => res.json(places));
+
+app.post("/api/admin/places", requireAdmin, async (req, res) => {
+  const { address, name, radius } = req.body || {};
+  if (!address) return res.status(400).json({ error: "address is required" });
+  if (!OPENCAGE_KEY) return res.status(500).json({ error: "OPENCAGE_KEY not set on server" });
+
+  try {
+    const url = new URL("https://api.opencagedata.com/geocode/v1/json");
+    url.searchParams.set("q", address);
+    url.searchParams.set("key", OPENCAGE_KEY);
+    url.searchParams.set("limit", "1");
+    url.searchParams.set("no_annotations", "1");
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error("geocode failed");
+    const data = await resp.json();
+    const best = data.results?.[0];
+    if (!best) return res.status(404).json({ error: "Address not found" });
+
+    const lat = best.geometry.lat;
+    const lng = best.geometry.lng;
+    const display = best.formatted || address;
+
+    let baseId = slugify(name || display);
+    if (!baseId) baseId = "place";
+    let id = baseId; let n = 1;
+    while (placeById[id]) { id = `${baseId}-${++n}`; }
+
+    const place = {
+      id,
+      name: name || display,
+      address: display,
+      lat,
+      lng,
+      radius: Number(radius) || DEFAULT_RADIUS
+    };
+    places.push(place);
+    savePlaces();
+
+    const base = process.env.BASE_URL || "";
+    const joinUrl = base ? `${base}/join.html?place=${encodeURIComponent(id)}` : `/join.html?place=${encodeURIComponent(id)}`;
+    const qrUrl = base ? `${base}/qr/${id}.png` : `/qr/${id}.png`;
+
+    res.json({ place, joinUrl, qrUrl });
+  } catch (e) {
+    res.status(500).json({ error: "Geocoding failed" });
+  }
+});
+
+app.delete("/api/admin/places/:id", requireAdmin, (req, res) => {
+  const { id } = req.params;
+  const idx = places.findIndex(p => p.id === id);
+  if (idx === -1) return res.status(404).json({ error: "Not found" });
+  places.splice(idx, 1);
+  savePlaces();
+  res.json({ ok: true });
+});
+
+// ---- 404 for non-file API ----
 app.use((req, res, next) => {
   if (req.path.startsWith("/api/") || req.path.startsWith("/qr/")) return res.status(404).json({ error: "Not found" });
   next();
