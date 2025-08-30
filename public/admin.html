@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin – Venue Manager</title>
+  <link rel="stylesheet" href="/css.css" />
+</head>
+<body class="p-4">
+  <div class="maxw" style="display:grid; gap:1rem;">
+    <header class="glass cardpad flex justify-between items-center">
+      <div>
+        <div class="brand">Admin Console</div>
+        <div class="small">Create or remove places. QR codes are generated automatically.</div>
+      </div>
+      <a class="btn" href="/">← Social user</a>
+    </header>
+
+    <section class="glass cardpad">
+      <h3>Unlock</h3>
+      <p class="small">Enter your Admin code to manage places.</p>
+      <div class="flex gap-3">
+        <input id="adminKey" class="input" type="password" placeholder="Admin code" />
+        <button id="unlockBtn" class="btn btn-primary">Unlock</button>
+      </div>
+      <div id="unlockMsg" class="small warn mt-2"></div>
+    </section>
+
+    <section id="mgr" class="glass cardpad" style="display:none;">
+      <h3>Create a place by address</h3>
+      <div class="grid">
+        <input id="placeName" class="input" placeholder="Place name (optional)" />
+        <input id="placeAddr" class="input" placeholder="Address (required)" />
+        <input id="placeRadius" class="input" type="number" value="90" min="30" max="300" />
+      </div>
+      <div class="mt-2">
+        <button id="createBtn" class="btn btn-primary">Create & get QR</button>
+      </div>
+      <div id="createOut" class="small mt-2"></div>
+
+      <hr class="div" />
+      <h3>Current places</h3>
+      <div id="list" class="list"></div>
+    </section>
+  </div>
+
+  <script type="module" src="/client/admin.js"></script>
+</body>
+</html>
